@@ -24,7 +24,15 @@ public class GameActivity extends AppCompatActivity {
         Point point = new Point();
         System.out.println("point x:" + point.x + " y:" + point.y);
         getWindowManager().getDefaultDisplay().getSize(point);
-        gameView = new GameView(this, point.x, point.y);
+
+        TextView scoreView = new TextView(this);
+        scoreView.setText("Score: 0");
+        scoreView.setTextSize(25);
+        scoreView.setGravity(Gravity.CENTER_HORIZONTAL);
+        scoreView.setTextColor(Color.parseColor("#333333"));
+        scoreView.setTypeface(null, Typeface.BOLD);
+
+        gameView = new GameView(this, scoreView, point.x, point.y);
 
         FrameLayout framelayout = new FrameLayout(this);
         framelayout.setLayoutParams(new AbsListView.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
@@ -32,13 +40,8 @@ public class GameActivity extends AppCompatActivity {
 
         framelayout.addView(gameView);
 
-        TextView textView1 = new TextView(this);
-        textView1.setText("Score: 123");
-        textView1.setTextSize(25);
-        textView1.setGravity(Gravity.CENTER_HORIZONTAL);
-        textView1.setTextColor(Color.parseColor("#333333"));
-        textView1.setTypeface(null, Typeface.BOLD);
-        framelayout.addView(textView1);
+
+        framelayout.addView(scoreView);
 
         Display display = getWindowManager().getDefaultDisplay();
         Point screenSize = new Point();

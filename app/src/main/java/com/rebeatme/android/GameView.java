@@ -8,6 +8,7 @@ import android.graphics.Rect;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.widget.TextView;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -26,9 +27,13 @@ public class GameView extends SurfaceView implements Runnable {
     private int delay = 0;
     private final int screenX;
     private final int screenY;
+    private final TextView scoreView;
+    private int score = 0;
 
-    public GameView(Context context, int screenX, int screenY) {
+    public GameView(Context context, TextView scoreView, int screenX, int screenY) {
         super(context);
+
+        this.scoreView = scoreView;
 
         this.screenX = screenX;
         this.screenY = screenY;
@@ -81,8 +86,13 @@ public class GameView extends SurfaceView implements Runnable {
             update.y += 10;
             if (Rect.intersects(update.getCollisionShape(),
                                 brick.getCollisionShape())) {
+
+                // catched
+                score++;
+                scoreView.setText("Score: "+score);
                 update.catched = true;
                 balls.remove(update);
+
             }
             if (update.y > screenY) {
                 balls.remove(update);
