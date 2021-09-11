@@ -1,6 +1,8 @@
 package com.rebeatme.android
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.media.Image
 import android.os.Bundle
 import android.util.Log
 import android.widget.FrameLayout
@@ -10,6 +12,16 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import com.google.android.gms.tasks.OnCompleteListener
+import com.google.android.gms.tasks.OnFailureListener
+import com.google.android.gms.tasks.OnSuccessListener
+import com.google.android.gms.tasks.Task
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.pose.Pose
+import com.google.mlkit.vision.pose.PoseDetection
+import com.google.mlkit.vision.pose.PoseDetector
+import com.google.mlkit.vision.pose.PoseLandmark
+import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
@@ -18,7 +30,9 @@ import com.karumi.dexter.listener.multi.MultiplePermissionsListener
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-class CameraActivity: AppCompatActivity() {
+class CameraActivity : AppCompatActivity() {
+
+    var poseDetector: PoseDetector? = null
 
     private var camera: Camera? = null
     private var videoCapture: VideoCapture? = null
@@ -31,7 +45,7 @@ class CameraActivity: AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.camera_game_layout)
         previewView = findViewById(R.id.previewView)
-        frameLayout = findViewById(R.id.frameLayout)
+//        frameLayout = findViewById(R.id.frameLayout)
         cameraExecutor = Executors.newSingleThreadExecutor()
         //create game view and add it to frame
         requestRuntimePermission()
@@ -96,21 +110,26 @@ class CameraActivity: AppCompatActivity() {
                 .requireLensFacing(CameraSelector.LENS_FACING_FRONT)
                 .build()
 
-        val imageCapture = ImageCapture.Builder()
-                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+//        val imageCapture = ImageCapture.Builder()
+//                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+//                .build()
+
+        val options = PoseDetectorOptions.Builder()
+                .setDetectorMode(PoseDetectorOptions.STREAM_MODE)
                 .build()
+        val poseDetector = PoseDetection.getClient(options)
 
         val imageAnalyzer = ImageAnalysis.Builder()
                 .build()
                 .also {
-                    it.setAnalyzer(cameraExecutor, LuminosityAnalyzer())
+                    it.setAnalyzer(cameraExecutor, LuminosityAnalyzer(poseDetector))
                 }
         cameraProvider.unbindAll()
         try {
             // A variable number of use-cases can be passed here -
             // camera provides access to CameraControl & CameraInfo
             camera = cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageCapture, imageAnalyzer)
+                    this, cameraSelector, preview, imageAnalyzer)
 
             // Attach the viewfinder's surface provider to preview use case
             preview?.setSurfaceProvider(previewView?.surfaceProvider)
@@ -120,33 +139,84 @@ class CameraActivity: AppCompatActivity() {
 
     }
 
-    private class LuminosityAnalyzer() : ImageAnalysis.Analyzer {
+    private class LuminosityAnalyzer(val poseDetector: PoseDetector) : ImageAnalysis.Analyzer {
+        @SuppressLint("UnsafeOptInUsageError")
+        override fun analyze(imageProxy: ImageProxy) {
+            println("!!!CALL")
 
+            @SuppressLint("UnsafeExperimentalUsageError") val mediaImage: Image? = imageProxy.getImage()
+            if (mediaImage != null) {
 
+                var image = InputImage.fromMediaImage(mediaImage, imageProxy.getImageInfo().getRotationDegrees())
 
-        /**
-         * Analyzes an image to produce a result.
-         *
-         * <p>The caller is responsible for ensuring this analysis method can be executed quickly
-         * enough to prevent stalls in the image acquisition pipeline. Otherwise, newly available
-         * images will not be acquired and analyzed.
-         *
-         * <p>The image passed to this method becomes invalid after this method returns. The caller
-         * should not store external references to this image, as these references will become
-         * invalid.
-         *
-         * @param image image being analyzed VERY IMPORTANT: Analyzer method implementation must
-         * call image.close() on received images when finished using them. Otherwise, new images
-         * may not be received or the camera may stall, depending on back pressure setting.
-         *
-         */
-        override fun analyze(image: ImageProxy) {
-
+                val currentTimeMillis = System.currentTimeMillis()
+                val result: Task<Pose> = poseDetector.process(image)
+                        .addOnSuccessListener(
+                                OnSuccessListener(fun(pose: Pose?) {
+                                    val allPoseLandmarks = pose?.allPoseLandmarks
+                                    println("pose landmarks: " + allPoseLandmarks?.size)
+                                    val leftShoulder = pose?.getPoseLandmark(PoseLandmark.LEFT_SHOULDER)
+                                    val position = leftShoulder?.position
+                                    println("!!!!!!!!!LEFT SHOULDER: $position")
+                                    var instance = java.time.Instant.ofEpochMilli(System.currentTimeMillis());
+                                    var localDateTime = java.time.LocalDateTime
+                                            .ofInstant(instance, java.time.ZoneId.systemDefault());
+                                    println("!!!!TIME $localDateTime")
+                                    println("success")
+                                }))
+                        .addOnFailureListener(
+                                OnFailureListener { e: java.lang.Exception? ->
+                                    println("failure: " + e.toString())
+                                })
+                        .addOnCompleteListener(
+                                OnCompleteListener(fun(pose: Task<Pose>?) {
+                                    println("on_complete: ")
+                                    imageProxy.close()
+                                    mediaImage.close()
+                                }))
+            }
         }
     }
 
     override fun onPause() {
         super.onPause()
     }
+//                val pose = result.result
+//                val allPoseLandmarks = result.result.allPoseLandmarks
+//                println("pose landmarks: " + allPoseLandmarks.size)
+//                val leftShoulder = pose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER)
+//                val rightShoulder = pose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER)
+//                val leftElbow = pose.getPoseLandmark(PoseLandmark.LEFT_ELBOW)
+//                val rightElbow = pose.getPoseLandmark(PoseLandmark.RIGHT_ELBOW)
+//                val leftWrist = pose.getPoseLandmark(PoseLandmark.LEFT_WRIST)
+//                val rightWrist = pose.getPoseLandmark(PoseLandmark.RIGHT_WRIST)
+//                val leftHip = pose.getPoseLandmark(PoseLandmark.LEFT_HIP)
+//                val rightHip = pose.getPoseLandmark(PoseLandmark.RIGHT_HIP)
+//                val leftKnee = pose.getPoseLandmark(PoseLandmark.LEFT_KNEE)
+//                val rightKnee = pose.getPoseLandmark(PoseLandmark.RIGHT_KNEE)
+//                val leftAnkle = pose.getPoseLandmark(PoseLandmark.LEFT_ANKLE)
+//                val rightAnkle = pose.getPoseLandmark(PoseLandmark.RIGHT_ANKLE)
+//                val leftPinky = pose.getPoseLandmark(PoseLandmark.LEFT_PINKY)
+//                val rightPinky = pose.getPoseLandmark(PoseLandmark.RIGHT_PINKY)
+//                val leftIndex = pose.getPoseLandmark(PoseLandmark.LEFT_INDEX)
+//                val rightIndex = pose.getPoseLandmark(PoseLandmark.RIGHT_INDEX)
+//                val leftThumb = pose.getPoseLandmark(PoseLandmark.LEFT_THUMB)
+//                val rightThumb = pose.getPoseLandmark(PoseLandmark.RIGHT_THUMB)
+//                val leftHeel = pose.getPoseLandmark(PoseLandmark.LEFT_HEEL)
+//                val rightHeel = pose.getPoseLandmark(PoseLandmark.RIGHT_HEEL)
+//                val leftFootIndex = pose.getPoseLandmark(PoseLandmark.LEFT_FOOT_INDEX)
+//                val rightFootIndex = pose.getPoseLandmark(PoseLandmark.RIGHT_FOOT_INDEX)
+//                val nose = pose.getPoseLandmark(PoseLandmark.NOSE)
+//                val leftEyeInner = pose.getPoseLandmark(PoseLandmark.LEFT_EYE_INNER)
+//                val leftEye = pose.getPoseLandmark(PoseLandmark.LEFT_EYE)
+//                val leftEyeOuter = pose.getPoseLandmark(PoseLandmark.LEFT_EYE_OUTER)
+//                val rightEyeInner = pose.getPoseLandmark(PoseLandmark.RIGHT_EYE_INNER)
+//                val rightEye = pose.getPoseLandmark(PoseLandmark.RIGHT_EYE)
+//                val rightEyeOuter = pose.getPoseLandmark(PoseLandmark.RIGHT_EYE_OUTER)
+//                val leftEar = pose.getPoseLandmark(PoseLandmark.LEFT_EAR)
+//                val rightEar = pose.getPoseLandmark(PoseLandmark.RIGHT_EAR)
+//                val leftMouth = pose.getPoseLandmark(PoseLandmark.LEFT_MOUTH)
+//                val rightMouth = pose.getPoseLandmark(PoseLandmark.RIGHT_MOUTH)
+//                println("!!!!!!!!!LEFT SHOULDER: $leftShoulder")
 
 }
