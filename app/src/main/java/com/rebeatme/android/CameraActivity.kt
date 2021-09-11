@@ -2,10 +2,15 @@ package com.rebeatme.android
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.graphics.*
 import android.media.Image
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
+import android.view.Gravity
+import android.view.View
 import android.widget.FrameLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
@@ -30,6 +35,22 @@ import com.karumi.dexter.listener.multi.MultiplePermissionsListener
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+import androidx.annotation.Nullable
+import androidx.camera.core.Camera
+import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
+import android.graphics.Bitmap
+import android.provider.MediaStore.Images.Media.getBitmap
+
+import androidx.camera.core.ImageProxy
+
+
+
+
+
+
+
+
 class CameraActivity : AppCompatActivity() {
 
     var poseDetector: PoseDetector? = null
@@ -37,6 +58,7 @@ class CameraActivity : AppCompatActivity() {
     private var camera: Camera? = null
     private var videoCapture: VideoCapture? = null
     private var previewView: PreviewView? = null
+    private var gameView: GameView? = null
     private var cameraProvider: ProcessCameraProvider? = null
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var frameLayout: FrameLayout
@@ -45,9 +67,28 @@ class CameraActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.camera_game_layout)
         previewView = findViewById(R.id.previewView)
-//        frameLayout = findViewById(R.id.frameLayout)
+        frameLayout = findViewById(R.id.frame_layout)
         cameraExecutor = Executors.newSingleThreadExecutor()
+
         //create game view and add it to frame
+        val screenSize = Point()
+        println("point x:" + screenSize.x + " y:" + screenSize.y)
+        windowManager.defaultDisplay.getSize(screenSize)
+
+        val scoreView = TextView(this)
+        scoreView.text = "Score: 0"
+        scoreView.textSize = 25f
+        scoreView.gravity = Gravity.CENTER_HORIZONTAL
+        scoreView.setTextColor(Color.parseColor("#333333"))
+        scoreView.setTypeface(null, Typeface.BOLD)
+
+        gameView = GameView(this, scoreView, screenSize.x, screenSize.y)
+
+        frameLayout.addView(scoreView)
+
+        val middleLineView = MiddleLineView(this, screenSize)
+        frameLayout.addView(middleLineView)
+
         requestRuntimePermission()
     }
 
@@ -122,7 +163,7 @@ class CameraActivity : AppCompatActivity() {
         val imageAnalyzer = ImageAnalysis.Builder()
                 .build()
                 .also {
-                    it.setAnalyzer(cameraExecutor, LuminosityAnalyzer(poseDetector))
+                    it.setAnalyzer(cameraExecutor, LuminosityAnalyzer(poseDetector, gameView))
                 }
         cameraProvider.unbindAll()
         try {
@@ -139,15 +180,22 @@ class CameraActivity : AppCompatActivity() {
 
     }
 
-    private class LuminosityAnalyzer(val poseDetector: PoseDetector) : ImageAnalysis.Analyzer {
+   private class LuminosityAnalyzer(val poseDetector: PoseDetector, val gameview: GameView?) : ImageAnalysis.Analyzer {
+
         @SuppressLint("UnsafeOptInUsageError")
         override fun analyze(imageProxy: ImageProxy) {
             println("!!!CALL")
 
+            var bitmap = BitmapUtils.getBitmap(imageProxy)
+            gameview?.setImage(bitmap)
+
             @SuppressLint("UnsafeExperimentalUsageError") val mediaImage: Image? = imageProxy.getImage()
             if (mediaImage != null) {
 
+
                 var image = InputImage.fromMediaImage(mediaImage, imageProxy.getImageInfo().getRotationDegrees())
+
+
 
                 val currentTimeMillis = System.currentTimeMillis()
                 val result: Task<Pose> = poseDetector.process(image)
@@ -178,45 +226,17 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        gameView?.resume()
+        Handler().postDelayed({
+            frameLayout.addView(gameView)
+        }, 1000)
+    }
+
     override fun onPause() {
         super.onPause()
+        gameView?.pause()
     }
-//                val pose = result.result
-//                val allPoseLandmarks = result.result.allPoseLandmarks
-//                println("pose landmarks: " + allPoseLandmarks.size)
-//                val leftShoulder = pose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER)
-//                val rightShoulder = pose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER)
-//                val leftElbow = pose.getPoseLandmark(PoseLandmark.LEFT_ELBOW)
-//                val rightElbow = pose.getPoseLandmark(PoseLandmark.RIGHT_ELBOW)
-//                val leftWrist = pose.getPoseLandmark(PoseLandmark.LEFT_WRIST)
-//                val rightWrist = pose.getPoseLandmark(PoseLandmark.RIGHT_WRIST)
-//                val leftHip = pose.getPoseLandmark(PoseLandmark.LEFT_HIP)
-//                val rightHip = pose.getPoseLandmark(PoseLandmark.RIGHT_HIP)
-//                val leftKnee = pose.getPoseLandmark(PoseLandmark.LEFT_KNEE)
-//                val rightKnee = pose.getPoseLandmark(PoseLandmark.RIGHT_KNEE)
-//                val leftAnkle = pose.getPoseLandmark(PoseLandmark.LEFT_ANKLE)
-//                val rightAnkle = pose.getPoseLandmark(PoseLandmark.RIGHT_ANKLE)
-//                val leftPinky = pose.getPoseLandmark(PoseLandmark.LEFT_PINKY)
-//                val rightPinky = pose.getPoseLandmark(PoseLandmark.RIGHT_PINKY)
-//                val leftIndex = pose.getPoseLandmark(PoseLandmark.LEFT_INDEX)
-//                val rightIndex = pose.getPoseLandmark(PoseLandmark.RIGHT_INDEX)
-//                val leftThumb = pose.getPoseLandmark(PoseLandmark.LEFT_THUMB)
-//                val rightThumb = pose.getPoseLandmark(PoseLandmark.RIGHT_THUMB)
-//                val leftHeel = pose.getPoseLandmark(PoseLandmark.LEFT_HEEL)
-//                val rightHeel = pose.getPoseLandmark(PoseLandmark.RIGHT_HEEL)
-//                val leftFootIndex = pose.getPoseLandmark(PoseLandmark.LEFT_FOOT_INDEX)
-//                val rightFootIndex = pose.getPoseLandmark(PoseLandmark.RIGHT_FOOT_INDEX)
-//                val nose = pose.getPoseLandmark(PoseLandmark.NOSE)
-//                val leftEyeInner = pose.getPoseLandmark(PoseLandmark.LEFT_EYE_INNER)
-//                val leftEye = pose.getPoseLandmark(PoseLandmark.LEFT_EYE)
-//                val leftEyeOuter = pose.getPoseLandmark(PoseLandmark.LEFT_EYE_OUTER)
-//                val rightEyeInner = pose.getPoseLandmark(PoseLandmark.RIGHT_EYE_INNER)
-//                val rightEye = pose.getPoseLandmark(PoseLandmark.RIGHT_EYE)
-//                val rightEyeOuter = pose.getPoseLandmark(PoseLandmark.RIGHT_EYE_OUTER)
-//                val leftEar = pose.getPoseLandmark(PoseLandmark.LEFT_EAR)
-//                val rightEar = pose.getPoseLandmark(PoseLandmark.RIGHT_EAR)
-//                val leftMouth = pose.getPoseLandmark(PoseLandmark.LEFT_MOUTH)
-//                val rightMouth = pose.getPoseLandmark(PoseLandmark.RIGHT_MOUTH)
-//                println("!!!!!!!!!LEFT SHOULDER: $leftShoulder")
 
 }

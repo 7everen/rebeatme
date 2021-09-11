@@ -1,9 +1,12 @@
 package com.rebeatme.android;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -23,6 +26,7 @@ public class GameView extends SurfaceView implements Runnable {
     private final BlockingQueue<com.rebeatme.android.Ball> balls;
     private final com.rebeatme.android.Ball measureBall;
     private final int[] ballsX;
+    private Bitmap bitmap;
 
     private int delay = 0;
     private final int screenX;
@@ -100,10 +104,17 @@ public class GameView extends SurfaceView implements Runnable {
         }
     }
 
+    public void setImage(Bitmap bitmap) {
+        this.bitmap = bitmap;
+    }
+
     private void draw() {
         if (surfaceHolder.getSurface().isValid()) {
             Canvas canvas = surfaceHolder.lockCanvas();
             canvas.drawColor(Color.WHITE);
+            if (bitmap != null) {
+                canvas.drawBitmap(bitmap,0,0,null);
+            }
             canvas.drawBitmap(brick.brick, brick.x, brick.y, paint);
 
             for (com.rebeatme.android.Ball ball : balls) {
@@ -116,7 +127,6 @@ public class GameView extends SurfaceView implements Runnable {
     }
 
     public void pause() {
-
         isPlaying = false;
         try {
             thread.join();
