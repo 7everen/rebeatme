@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
@@ -113,7 +114,8 @@ public class GameView extends SurfaceView implements Runnable {
             Canvas canvas = surfaceHolder.lockCanvas();
             canvas.drawColor(Color.WHITE);
             if (bitmap != null) {
-                canvas.drawBitmap(bitmap,0,0,null);
+                Bitmap rb = getResizedBitmap(bitmap, screenX);
+                canvas.drawBitmap(rb,0,200,null);
             }
             canvas.drawBitmap(brick.brick, brick.x, brick.y, paint);
 
@@ -124,6 +126,24 @@ public class GameView extends SurfaceView implements Runnable {
             }
             surfaceHolder.unlockCanvasAndPost(canvas);
         }
+    }
+
+    public Bitmap getResizedBitmap(Bitmap bm, int newWidth) {
+        int width = bm.getWidth();
+        int height = bm.getHeight();
+        float scaleWidth = ((float) newWidth) / width;
+        float scaleHeight = scaleWidth;
+        int newHeight = (int) scaleHeight * height;
+        // CREATE A MATRIX FOR THE MANIPULATION
+        Matrix matrix = new Matrix();
+        // RESIZE THE BIT MAP
+        matrix.postScale(-scaleWidth, scaleHeight, newWidth/2, newHeight/2);
+
+        // "RECREATE" THE NEW BITMAP
+        Bitmap resizedBitmap = Bitmap.createBitmap(
+                bm, 0, 0, width, height, matrix, false);
+
+        return resizedBitmap;
     }
 
     public void pause() {
