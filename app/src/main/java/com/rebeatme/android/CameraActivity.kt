@@ -46,11 +46,6 @@ import androidx.camera.core.ImageProxy
 
 
 
-
-
-
-
-
 class CameraActivity : AppCompatActivity() {
 
     var poseDetector: PoseDetector? = null
@@ -191,26 +186,19 @@ class CameraActivity : AppCompatActivity() {
 
             @SuppressLint("UnsafeExperimentalUsageError") val mediaImage: Image? = imageProxy.getImage()
             if (mediaImage != null) {
-
-
                 var image = InputImage.fromMediaImage(mediaImage, imageProxy.getImageInfo().getRotationDegrees())
-
-
 
                 val currentTimeMillis = System.currentTimeMillis()
                 val result: Task<Pose> = poseDetector.process(image)
                         .addOnSuccessListener(
                                 OnSuccessListener(fun(pose: Pose?) {
+                                    captureMovement(pose)
+
                                     val allPoseLandmarks = pose?.allPoseLandmarks
                                     println("pose landmarks: " + allPoseLandmarks?.size)
                                     val leftShoulder = pose?.getPoseLandmark(PoseLandmark.LEFT_SHOULDER)
                                     val position = leftShoulder?.position
                                     println("!!!!!!!!!LEFT SHOULDER: $position")
-                                    var instance = java.time.Instant.ofEpochMilli(System.currentTimeMillis());
-                                    var localDateTime = java.time.LocalDateTime
-                                            .ofInstant(instance, java.time.ZoneId.systemDefault());
-                                    println("!!!!TIME $localDateTime")
-                                    println("success")
                                 }))
                         .addOnFailureListener(
                                 OnFailureListener { e: java.lang.Exception? ->
@@ -224,6 +212,33 @@ class CameraActivity : AppCompatActivity() {
                                 }))
             }
         }
+
+       fun captureMovement(pose: Pose?) {
+           val allPoseLandmarks = pose?.allPoseLandmarks
+           println("pose landmarks: " + allPoseLandmarks?.size)
+
+           val leftHand = listOf(
+                   pose?.getPoseLandmark(PoseLandmark.LEFT_WRIST),
+                   pose?.getPoseLandmark(PoseLandmark.LEFT_PINKY),
+                   pose?.getPoseLandmark(PoseLandmark.LEFT_INDEX),
+                   pose?.getPoseLandmark(PoseLandmark.LEFT_THUMB),
+           )
+
+           val rightHand = listOf(
+                   pose?.getPoseLandmark(PoseLandmark.RIGHT_WRIST),
+                   pose?.getPoseLandmark(PoseLandmark.RIGHT_PINKY),
+                   pose?.getPoseLandmark(PoseLandmark.RIGHT_INDEX),
+                   pose?.getPoseLandmark(PoseLandmark.RIGHT_THUMB)
+           )
+
+           sendToGame(leftHand, rightHand)
+       }
+
+       private fun sendToGame(leftHand: List<PoseLandmark?>, rightHand: List<PoseLandmark?>) {
+           gameview?.processRecognition(leftHand, rightHand)
+
+           TODO("Not yet implemented")
+       }
     }
 
     override fun onResume() {

@@ -14,6 +14,9 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.TextView;
 
+import com.google.mlkit.vision.pose.PoseLandmark;
+
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -173,6 +176,9 @@ public class GameView extends SurfaceView implements Runnable {
         return (int) ((Math.random() * (max - min)) + min);
     }
 
+    public void processRecognition(List<PoseLandmark> leftHand, List<PoseLandmark> rightHand) {
+
+    }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
