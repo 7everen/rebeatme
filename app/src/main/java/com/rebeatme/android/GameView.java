@@ -6,8 +6,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.PixelFormat;
-import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -19,9 +17,10 @@ import com.google.mlkit.vision.pose.PoseLandmark;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.stream.Collectors;
 
 public class GameView extends SurfaceView implements Runnable {
-    private boolean isPlaying =false;
+    private boolean isPlaying = false;
     private Thread thread;
 
     private final com.rebeatme.android.Brick brick;
@@ -47,25 +46,25 @@ public class GameView extends SurfaceView implements Runnable {
         this.screenY = screenY;
 
 
-        System.out.println("Screen x: "+screenX + " Y: "+screenY);
+        System.out.println("Screen x: " + screenX + " Y: " + screenY);
         brick = new com.rebeatme.android.Brick(context);
-        brick.y = screenY/2 - brick.height/2;
-        brick.x = (screenX / 2) - brick.width/2;
+        brick.y = screenY / 2 - brick.height / 2;
+        brick.x = (screenX / 2) - brick.width / 2;
 
         surfaceHolder = getHolder();
         paint = new Paint();
 
-        measureBall  = new com.rebeatme.android.Ball(context);
+        measureBall = new com.rebeatme.android.Ball(context);
         ballsX = new int[]
-        {
-                0,
-                measureBall.width,
-                measureBall.width * 2,
-                measureBall.width * 3,
-                measureBall.width * 4,
-                measureBall.width * 5,
-                measureBall.width * 6
-        };
+                {
+                        0,
+                        measureBall.width,
+                        measureBall.width * 2,
+                        measureBall.width * 3,
+                        measureBall.width * 4,
+                        measureBall.width * 5,
+                        measureBall.width * 6
+                };
         balls = new LinkedBlockingDeque<>();
         balls.clear();
     }
@@ -81,7 +80,7 @@ public class GameView extends SurfaceView implements Runnable {
 
     private void update() {
         com.rebeatme.android.Ball ball;
-        if ((delay%40) == 0) {
+        if ((delay % 40) == 0) {
             ball = new com.rebeatme.android.Ball(getContext());
             int index = getRandomNumber(0, 6);
             ball.x = ballsX[index];
@@ -93,11 +92,11 @@ public class GameView extends SurfaceView implements Runnable {
         for (com.rebeatme.android.Ball update : balls) {
             update.y += 10;
             if (Rect.intersects(update.getCollisionShape(),
-                                brick.getCollisionShape())) {
+                    brick.getCollisionShape())) {
 
                 // catched
                 score++;
-                scoreView.setText("Score: "+score);
+                scoreView.setText("Score: " + score);
                 update.catched = true;
                 balls.remove(update);
 
@@ -118,7 +117,7 @@ public class GameView extends SurfaceView implements Runnable {
             canvas.drawColor(Color.WHITE);
             if (bitmap != null) {
                 Bitmap rb = getResizedBitmap(bitmap, screenX);
-                canvas.drawBitmap(rb,0,200,null);
+                canvas.drawBitmap(rb, 0, 200, null);
             }
             canvas.drawBitmap(brick.brick, brick.x, brick.y, paint);
 
@@ -140,7 +139,7 @@ public class GameView extends SurfaceView implements Runnable {
         // CREATE A MATRIX FOR THE MANIPULATION
         Matrix matrix = new Matrix();
         // RESIZE THE BIT MAP
-        matrix.postScale(-scaleWidth, scaleHeight, newWidth/2, newHeight/2);
+        matrix.postScale(-scaleWidth, scaleHeight, newWidth / 2, newHeight / 2);
 
         // "RECREATE" THE NEW BITMAP
         Bitmap resizedBitmap = Bitmap.createBitmap(
@@ -177,7 +176,18 @@ public class GameView extends SurfaceView implements Runnable {
     }
 
     public void processRecognition(List<PoseLandmark> leftHand, List<PoseLandmark> rightHand) {
+        List<Ball> caughtBalls = balls.stream()
+                .filter(ball -> isCaught(ball, leftHand) || isCaught(ball, rightHand))
+                .collect(Collectors.toList());
 
+    }
+
+    private boolean isCaught(Ball ball, List<PoseLandmark> hand) {
+        return hand.stream()
+                .anyMatch(leftHandPoint -> (ball.x + ball.width) > leftHandPoint.getPosition().x
+                        && (ball.x) < leftHandPoint.getPosition().x
+                        && (ball.y + ball.height) > leftHandPoint.getPosition().y
+                        && (ball.y) < leftHandPoint.getPosition().y);
     }
 
     @Override
