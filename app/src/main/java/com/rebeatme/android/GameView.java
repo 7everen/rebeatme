@@ -2,11 +2,15 @@ package com.rebeatme.android;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+
+import android.graphics.Point;
+import android.os.Handler;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -23,7 +27,14 @@ public class GameView extends SurfaceView implements Runnable {
     private boolean isPlaying = false;
     private Thread thread;
 
-    private final com.rebeatme.android.Brick brick;
+    private final com.rebeatme.android.Brick brick1;
+    private final com.rebeatme.android.Brick brick2;
+    private final com.rebeatme.android.Brick brick3;
+    private final com.rebeatme.android.Brick brick4;
+    private final com.rebeatme.android.Brick brick5;
+    private final com.rebeatme.android.Brick brick6;
+    private final com.rebeatme.android.Brick brick7;
+    private final com.rebeatme.android.Brick brick8;
     private final Paint paint;
     private final SurfaceHolder surfaceHolder;
     private final BlockingQueue<com.rebeatme.android.Ball> balls;
@@ -31,11 +42,16 @@ public class GameView extends SurfaceView implements Runnable {
     private final int[] ballsX;
     private Bitmap bitmap;
 
+
+    private RedDotView rect1;
+
     private int delay = 0;
     private final int screenX;
     private final int screenY;
     private final TextView scoreView;
     private int score = 0;
+
+    private float scale = 1.0F;
 
     public GameView(Context context, TextView scoreView, int screenX, int screenY) {
         super(context);
@@ -47,9 +63,15 @@ public class GameView extends SurfaceView implements Runnable {
 
 
         System.out.println("Screen x: " + screenX + " Y: " + screenY);
-        brick = new com.rebeatme.android.Brick(context);
-        brick.y = screenY / 2 - brick.height / 2;
-        brick.x = (screenX / 2) - brick.width / 2;
+        brick1 = new com.rebeatme.android.Brick(context);
+        brick2 = new com.rebeatme.android.Brick(context);
+        brick3 = new com.rebeatme.android.Brick(context);
+        brick4 = new com.rebeatme.android.Brick(context);
+        brick5 = new com.rebeatme.android.Brick(context);
+        brick6 = new com.rebeatme.android.Brick(context);
+        brick7 = new com.rebeatme.android.Brick(context);
+        brick8 = new com.rebeatme.android.Brick(context);
+
 
         surfaceHolder = getHolder();
         paint = new Paint();
@@ -67,6 +89,9 @@ public class GameView extends SurfaceView implements Runnable {
                 };
         balls = new LinkedBlockingDeque<>();
         balls.clear();
+
+        rect1 = new RedDotView(context);
+        rect1.setXY(100, 100);
     }
 
     @Override
@@ -91,16 +116,22 @@ public class GameView extends SurfaceView implements Runnable {
 
         for (com.rebeatme.android.Ball update : balls) {
             update.y += 10;
-            if (Rect.intersects(update.getCollisionShape(),
+            /*if (Rect.intersects(update.getCollisionShape(),
                     brick.getCollisionShape())) {
 
                 // catched
                 score++;
                 scoreView.setText("Score: " + score);
-                update.catched = true;
-                balls.remove(update);
+                //update.catched = true;
+                //balls.remove(update);
 
-            }
+                //Explosion explosion = new Explosion(getContext(), update.x, update.y);
+                *//*new Handler().postDelayed({
+                        explosion
+                }, 1000);*//*
+
+
+            }*/
             if (update.y > screenY) {
                 balls.remove(update);
             }
@@ -119,7 +150,14 @@ public class GameView extends SurfaceView implements Runnable {
                 Bitmap rb = getResizedBitmap(bitmap, screenX);
                 canvas.drawBitmap(rb, 0, 200, null);
             }
-            canvas.drawBitmap(brick.brick, brick.x, brick.y, paint);
+            canvas.drawBitmap(brick1.brick, brick1.x, brick1.y, paint);
+            canvas.drawBitmap(brick2.brick, brick2.x, brick2.y, paint);
+            canvas.drawBitmap(brick3.brick, brick3.x, brick3.y, paint);
+            canvas.drawBitmap(brick4.brick, brick4.x, brick4.y, paint);
+            canvas.drawBitmap(brick5.brick, brick5.x, brick5.y, paint);
+            canvas.drawBitmap(brick6.brick, brick6.x, brick6.y, paint);
+            canvas.drawBitmap(brick7.brick, brick7.x, brick7.y, paint);
+            canvas.drawBitmap(brick8.brick, brick8.x, brick8.y, paint);
 
             for (com.rebeatme.android.Ball ball : balls) {
                 if (!ball.catched) {
@@ -136,6 +174,9 @@ public class GameView extends SurfaceView implements Runnable {
         float scaleWidth = ((float) newWidth) / width;
         float scaleHeight = scaleWidth;
         int newHeight = (int) scaleHeight * height;
+
+        scale = scaleWidth;
+
         // CREATE A MATRIX FOR THE MANIPULATION
         Matrix matrix = new Matrix();
         // RESIZE THE BIT MAP
@@ -176,33 +217,89 @@ public class GameView extends SurfaceView implements Runnable {
     }
 
     public void processRecognition(List<PoseLandmark> leftHand, List<PoseLandmark> rightHand) {
-        List<Ball> caughtBalls = balls.stream()
-                .filter(ball -> isCaught(ball, leftHand) || isCaught(ball, rightHand))
-                .collect(Collectors.toList());
+
+
+        List<Point> leftHand2 = leftHand.stream().map(mark -> {
+            if(mark != null){
+                return new Point(screenX - (int) (scale * mark.getPosition().x), (int) (scale * mark.getPosition().y) + (int) (screenY * 0.05));
+            }else{
+                return null;
+            }
+        }).collect(Collectors.toList());
+
+        List<Point> rightHand2 = rightHand.stream().map(mark -> {
+            if(mark != null){
+                return new Point(screenX - (int) (scale * mark.getPosition().x), (int) (scale * mark.getPosition().y) + (int) (screenY * 0.05));
+            }else{
+                return null;
+            }
+        }).collect(Collectors.toList());
+
+
+        if(leftHand2.get(0) != null) {
+            brick1.y = leftHand2.get(0).y;
+            brick1.x = leftHand2.get(0).x;
+        }
+
+        if(leftHand2.get(1) != null) {
+            brick2.y = leftHand2.get(1).y;
+            brick2.x = leftHand2.get(1).x;
+        }
+
+        if(leftHand2.get(2) != null) {
+            brick3.y = leftHand2.get(2).y;
+            brick3.x = leftHand2.get(2).x;
+        }
+
+        if(leftHand2.get(3) != null) {
+            brick4.y = leftHand2.get(3).y;
+            brick4.x = leftHand2.get(3).x;
+        }
+
+        if(rightHand2.get(0) != null) {
+            brick5.y = rightHand2.get(0).y;
+            brick5.x = rightHand2.get(0).x;
+        }
+
+        if(rightHand2.get(1) != null) {
+            brick6.y = rightHand2.get(1).y;
+            brick6.x = rightHand2.get(1).x;
+        }
+
+        if(rightHand2.get(2) != null) {
+            brick7.y = rightHand2.get(2).y;
+            brick7.x = rightHand2.get(2).x;
+        }
+
+        if(rightHand2.get(3) != null) {
+            brick8.y = rightHand2.get(3).y;
+            brick8.x = rightHand2.get(3).x;
+        }
+
+        balls.stream()
+                .filter(ball -> isCaught(ball, leftHand2) || isCaught(ball, rightHand2))
+                .forEach(ball -> {
+
+                    Log.i("123", ">>>>>>>~~~~~~!!!!!!!   CATCHED!!!!!!");
+
+                    ball.catched = true;
+                    balls.remove(ball);
+                });
 
     }
 
-    private boolean isCaught(Ball ball, List<PoseLandmark> hand) {
+    private boolean isCaught(Ball ball, List<Point> hand) {
         return hand.stream()
-                .anyMatch(leftHandPoint -> (ball.x + ball.width) > leftHandPoint.getPosition().x
-                        && (ball.x) < leftHandPoint.getPosition().x
-                        && (ball.y + ball.height) > leftHandPoint.getPosition().y
-                        && (ball.y) < leftHandPoint.getPosition().y);
+                .filter(m -> m != null)
+                .anyMatch(leftHandPoint -> (ball.x + ball.width) > leftHandPoint.x
+                        && (ball.x) < leftHandPoint.x
+                        && (ball.y + ball.height) > leftHandPoint.y
+                        && (ball.y) < leftHandPoint.y);
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            if (event.getX() > (screenX / 2) - brick.width / 2) {
-                if (brick.x < screenX - brick.width) {
-                    brick.x += brick.width / 2;
-                }
-            } else {
-                if (brick.x > 0) {
-                    brick.x -= brick.width / 2;
-                }
-            }
-        }
+
         return true;
     }
 }

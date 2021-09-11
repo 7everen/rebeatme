@@ -6,43 +6,50 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.util.AttributeSet;
-import android.util.DisplayMetrics;
 import android.view.View;
 
-public class MiddleLineView extends View {
+public class RedDotView extends View {
 
     Paint paint = new Paint();
     Point screen = null;
+    int x = 0;
+    int y = 0;
+
 
     private void init() {
-        paint.setColor(Color.BLACK);
+        paint.setColor(Color.RED);
         paint.setStrokeWidth(10);
     }
 
-    public MiddleLineView(Context context) {
+    public RedDotView(Context context) {
         super(context);
         init();
     }
 
-    public MiddleLineView(Context context, Point screen) {
+    public RedDotView(Context context, Point screen) {
         super(context);
         this.screen = screen;
         init();
     }
 
-    public MiddleLineView(Context context, AttributeSet attrs) {
+    public RedDotView(Context context, AttributeSet attrs) {
         super(context, attrs);
         init();
     }
 
-    public MiddleLineView(Context context, AttributeSet attrs, int defStyle) {
+    public RedDotView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         init();
     }
 
+    public void setXY(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
     @Override
     public void onDraw(Canvas canvas) {
-        canvas.drawLine(0, screen.y/2, 1080, screen.y/2, paint);
+        canvas.drawRect(x, y, x+50, y+50, paint);
     }
 
 }

@@ -15,7 +15,14 @@ public class Ball {
     public int height = 0;
 
     public Ball(Context context) {
-        ball = BitmapFactory.decodeResource(context.getResources(), R.drawable.ball);
+        int randShuba = getRandomNumber(0,3);
+        if(randShuba == 0){
+            ball = BitmapFactory.decodeResource(context.getResources(), R.drawable.shuba1);
+        }else if(randShuba == 1){
+            ball = BitmapFactory.decodeResource(context.getResources(), R.drawable.shuba2);
+        }else{
+            ball = BitmapFactory.decodeResource(context.getResources(), R.drawable.shuba3);
+        }
 
         width  = ball.getWidth();
         height = ball.getHeight();
@@ -28,5 +35,9 @@ public class Ball {
 
     public Rect getCollisionShape() {
         return new Rect(x, y, x + width, y + height);
+    }
+
+    public int getRandomNumber(int min, int max) {
+        return (int) ((Math.random() * (max - min)) + min);
     }
 }

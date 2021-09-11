@@ -17,8 +17,8 @@ public class Brick {
         brick = BitmapFactory.decodeResource(context.getResources(), R.drawable.brick);
         width = brick.getWidth();
         height = brick.getHeight();
-        width/=4;
-        height/=4;
+        width/=20;
+        height/=20;
 
         y = 0;
         x = 0;

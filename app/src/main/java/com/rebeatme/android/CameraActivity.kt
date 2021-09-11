@@ -58,6 +58,7 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var frameLayout: FrameLayout
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.camera_game_layout)
@@ -237,7 +238,7 @@ class CameraActivity : AppCompatActivity() {
        private fun sendToGame(leftHand: List<PoseLandmark?>, rightHand: List<PoseLandmark?>) {
            gameview?.processRecognition(leftHand, rightHand)
 
-           TODO("Not yet implemented")
+
        }
     }
 
