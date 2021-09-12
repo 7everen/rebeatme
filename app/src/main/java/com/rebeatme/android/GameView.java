@@ -11,13 +11,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.widget.TextView;
 
 import com.google.mlkit.vision.pose.PoseLandmark;
 
@@ -32,10 +29,15 @@ public class GameView extends SurfaceView implements Runnable {
 
     private final Bitmap rainbow;
     private final Bitmap button;
+    private final Bitmap start;
     private final Bitmap explosion;
     private boolean explosionVisible = false;
     private int explosionY = 0;
     private int explosionX = 0;
+
+    private boolean started = false;
+    private Double startedTime = 0.0;
+    private List<Double> shybasTimes;
 
     private final Bitmap coin;
     private boolean coinVisible = false;
@@ -67,7 +69,7 @@ public class GameView extends SurfaceView implements Runnable {
     private final int screenY;
     private int score = 0;
 
-    private final boolean DEBUG = true;
+    private final boolean DEBUG = false;
 
     private float drawLineY;
 
@@ -87,6 +89,11 @@ public class GameView extends SurfaceView implements Runnable {
         int buttonW = buttonOrig.getWidth()/2;
         int buttonH = buttonOrig.getHeight()/2;
         button = Bitmap.createScaledBitmap(buttonOrig, buttonW, buttonH, false);
+
+        Bitmap startOrig = BitmapFactory.decodeResource(context.getResources(), R.drawable.start);
+        int startW = buttonOrig.getWidth()/2;
+        int startH = buttonOrig.getHeight()/2;
+        start = Bitmap.createScaledBitmap(startOrig, startW, startH, false);
 
         Bitmap explosionOrig = BitmapFactory.decodeResource(context.getResources(), R.drawable.explosion3);
         int explosionW = explosionOrig.getWidth()/4;
@@ -133,8 +140,7 @@ public class GameView extends SurfaceView implements Runnable {
                         measureBall.width * 2,
                         measureBall.width * 3,
                         measureBall.width * 4,
-                        measureBall.width * 5,
-                        measureBall.width * 6
+                        measureBall.width * 5
                 };
         balls = new LinkedBlockingDeque<>();
         balls.clear();
@@ -154,14 +160,31 @@ public class GameView extends SurfaceView implements Runnable {
 
     private void update() {
         com.rebeatme.android.Ball ball;
-        if ((delay % 40) == 0) {
+
+        if(started){
+            if(shybasTimes.size() >0 ){
+                Double currentTime = (double) System.currentTimeMillis() / 1000;
+                Double shybasTime = shybasTimes.get(0);
+                if(currentTime - startedTime > shybasTime){
+                    shybasTimes.remove(shybasTime);
+                    ball = new com.rebeatme.android.Ball(getContext());
+                    int index = getRandomNumber(0, 5);
+                    ball.x = ballsX[index];
+                    ball.y = -measureBall.height;
+                    balls.add(ball);
+                }
+            }else{
+                started = false;
+            }
+        }
+        /*if ((delay % 40) == 0) {
             ball = new com.rebeatme.android.Ball(getContext());
-            int index = getRandomNumber(0, 6);
+            int index = getRandomNumber(0, 5);
             ball.x = ballsX[index];
             ball.y = -measureBall.height;
             balls.add(ball);
         }
-        delay++;
+        delay++;*/
 
         for (com.rebeatme.android.Ball update : balls) {
             update.y += 20;
@@ -213,7 +236,11 @@ public class GameView extends SurfaceView implements Runnable {
             canvas.drawLine(0, drawLineY+100, 1080, drawLineY+100, paintLine);
 
             canvas.drawBitmap(rainbow, 100, 0, paint);
-            canvas.drawBitmap(button, screenX/2 - button.getWidth()/2, screenY - 350, paint);
+            if(started){
+                canvas.drawBitmap(button, screenX/2 - button.getWidth()/2, screenY - 350, paint);
+            }else {
+                canvas.drawBitmap(start, screenX/2 - start.getWidth()/2, screenY - 350, paint);
+            }
 
             canvas.drawText("Score: "+score, screenX/2 - 140, 250, paintScore);
 
@@ -394,7 +421,21 @@ public class GameView extends SurfaceView implements Runnable {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
 
+            int left = screenX/2 - button.getWidth()/2;
+            int top = screenY - 350;
+            if(event.getX() > left && event.getX() < left + button.getWidth() &&
+            event.getY() > top && event.getY() < top + button.getHeight()) {
+                   started = !started;
+                   if(started){
+                       shybasTimes = new Audio().audioBits;
+
+                       startedTime = (double) System.currentTimeMillis() / 1000;
+                   }
+                score = 0;
+            }
+        }
         return true;
     }
 }
