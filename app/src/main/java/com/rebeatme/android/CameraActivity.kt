@@ -7,10 +7,7 @@ import android.media.Image
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
-import android.view.Gravity
-import android.view.View
 import android.widget.FrameLayout
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
@@ -35,16 +32,9 @@ import com.karumi.dexter.listener.multi.MultiplePermissionsListener
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-import androidx.annotation.Nullable
 import androidx.camera.core.Camera
-import java.io.ByteArrayOutputStream
-import java.nio.ByteBuffer
-import android.graphics.Bitmap
-import android.provider.MediaStore.Images.Media.getBitmap
 
 import androidx.camera.core.ImageProxy
-
-
 
 class CameraActivity : AppCompatActivity() {
 
@@ -71,19 +61,7 @@ class CameraActivity : AppCompatActivity() {
         println("point x:" + screenSize.x + " y:" + screenSize.y)
         windowManager.defaultDisplay.getSize(screenSize)
 
-        val scoreView = TextView(this)
-        scoreView.text = "Score: 0"
-        scoreView.textSize = 25f
-        scoreView.gravity = Gravity.CENTER_HORIZONTAL
-        scoreView.setTextColor(Color.parseColor("#333333"))
-        scoreView.setTypeface(null, Typeface.BOLD)
-
-        gameView = GameView(this, scoreView, screenSize.x, screenSize.y)
-
-        frameLayout.addView(scoreView)
-
-        val middleLineView = MiddleLineView(this, screenSize)
-        frameLayout.addView(middleLineView)
+        gameView = GameView(this, screenSize.x, screenSize.y)
 
         requestRuntimePermission()
     }
