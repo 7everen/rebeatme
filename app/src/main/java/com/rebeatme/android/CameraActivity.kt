@@ -35,6 +35,7 @@ import java.util.concurrent.Executors
 import androidx.camera.core.Camera
 
 import androidx.camera.core.ImageProxy
+import android.media.MediaPlayer
 
 class CameraActivity : AppCompatActivity() {
 
@@ -97,7 +98,7 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun onPermissionDenied() {
-        showResultMessage("Poshel nahuy")
+        showResultMessage("So error, much crash")
         finish()
     }
 
@@ -151,6 +152,11 @@ class CameraActivity : AppCompatActivity() {
         } catch (exc: Exception) {
             Log.e("TAG", "Use case binding failed", exc)
         }
+
+//        Thread {
+//            val music = MediaPlayer.create(this, R.raw.music)
+//            music.start()
+//        }.start()
 
     }
 
